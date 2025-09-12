@@ -9,11 +9,7 @@ import { ArrowLeft, Calendar, Image, User } from 'lucide-react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
-        title: 'Dashboard',
-        href: '/dashboard',
-    },
-    {
-        title: 'Animals',
+        title: 'Pets',
         href: animals.index().url,
     },
     {
@@ -61,7 +57,7 @@ export default function AnimalsPhotos() {
                     <Button variant="outline" size="sm" asChild>
                         <Link href={animals.show(animal.id).url}>
                             <ArrowLeft className="mr-2 h-4 w-4" />
-                            Back to Animal
+                            Back to Pet
                         </Link>
                     </Button>
                     <div>

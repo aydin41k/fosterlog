@@ -19,33 +19,9 @@ Route::get('/public/animals/{slug}', [PublicAnimalController::class, 'show'])
     ->name('animals.public.show');
 
 Route::middleware(['auth', 'verified'])->group(function () {
+    // Keep the dashboard route for compatibility, but redirect to Pets (Animals index)
     Route::get('dashboard', function () {
-        $user = request()->user();
-
-        // Get animal count for current user
-        $animalCount = $user->animals()->count();
-
-        // Get today's actions count
-        $todayActions = \App\Models\Action::whereHas('animal', function ($query) use ($user) {
-            $query->where('foster_carer_id', $user->id);
-        })->whereDate('performed_at', today())->count();
-
-        // Get latest weight recordings (last 5)
-        $latestWeights = \App\Models\AnimalWeight::with(['animal'])
-            ->whereHas('animal', function ($query) use ($user) {
-                $query->where('foster_carer_id', $user->id);
-            })
-            ->orderBy('measured_at', 'desc')
-            ->limit(5)
-            ->get();
-
-        return Inertia::render('dashboard', [
-            'stats' => [
-                'animals_count' => $animalCount,
-                'today_actions' => $todayActions,
-                'latest_weights' => $latestWeights,
-            ],
-        ]);
+        return redirect()->route('animals.index');
     })->name('dashboard');
 
     // Animal management routes

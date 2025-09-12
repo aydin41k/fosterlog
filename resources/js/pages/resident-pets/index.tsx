@@ -16,10 +16,6 @@ import { Heart, Plus } from 'lucide-react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
-        title: 'Dashboard',
-        href: '/dashboard',
-    },
-    {
         title: 'Resident Pets',
         href: '',
     },

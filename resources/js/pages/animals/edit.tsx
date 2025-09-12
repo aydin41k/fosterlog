@@ -12,11 +12,7 @@ import { ArrowLeft, Save } from 'lucide-react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
-        title: 'Dashboard',
-        href: '/dashboard',
-    },
-    {
-        title: 'Animals',
+        title: 'Pets',
         href: animals.index().url,
     },
     {
@@ -82,7 +78,7 @@ export default function AnimalsEdit() {
                     <Button variant="outline" size="sm" asChild>
                         <Link href={animals.index().url}>
                             <ArrowLeft className="mr-2 h-4 w-4" />
-                            Back to Animals
+                            Back to Pets
                         </Link>
                     </Button>
                     <div>
