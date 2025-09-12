@@ -26,7 +26,10 @@ final class AnimalWeightResource extends JsonResource
             'updated_at' => $this->updated_at,
             
             // Relationships
-            'recorded_by' => new UserResource($this->whenLoaded('recordedBy')),
+            'recorded_by' => $this->when(
+                $this->relationLoaded('recordedBy'),
+                fn () => new UserResource($this->recordedBy)
+            ),
         ];
     }
 }

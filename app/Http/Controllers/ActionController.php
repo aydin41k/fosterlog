@@ -5,53 +5,49 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Enums\ActionType;
-use App\Http\Resources\ActionResource;
 use App\Models\Action;
 use App\Models\Animal;
 use Illuminate\Http\Request;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
+use Inertia\Inertia;
 
 final class ActionController extends Controller
 {
     /**
      * Display a listing of actions for an animal.
      */
-    public function index(Request $request, Animal $animal): AnonymousResourceCollection
+    public function index(Request $request, Animal $animal): \Inertia\Response
     {
-        Gate::authorize('viewAny', Action::class);
-        
-        // Only allow viewing actions for animals assigned to current user
-        if ($request->user()->id !== $animal->foster_carer_id) {
-            abort(403);
-        }
+        Gate::authorize('view', $animal);
 
         $query = $animal->actions()->with('performedBy:id,name');
 
         // Filter by type if specified
         if ($request->has('type')) {
             $type = $request->query('type');
-            
+
             // Validate the type parameter
             if (!in_array($type, ['food', 'medication'])) {
-                return response()->json([
-                    'error' => 'Invalid type. Must be "food" or "medication".'
-                ], 400);
+                abort(400, 'Invalid type. Must be "food" or "medication".');
             }
-            
+
             $query->where('type', $type);
         }
 
         $actions = $query->orderBy('performed_at', 'desc')->get();
 
-        return ActionResource::collection($actions);
+        return Inertia::render('animals/actions', [
+            'animal' => $animal,
+            'actions' => $actions,
+            'filter_type' => $request->get('type', 'all'),
+        ]);
     }
 
     /**
      * Store a newly created action.
      */
-    public function store(Request $request, Animal $animal): ActionResource
+    public function store(Request $request, Animal $animal): \Illuminate\Http\RedirectResponse
     {
         Gate::authorize('create', [Action::class, $animal]);
 
@@ -65,7 +61,7 @@ final class ActionController extends Controller
         // Type-specific validation
         $this->validateDetailsForType($validated['type'], $validated['details']);
 
-        $action = Action::create([
+        Action::create([
             'animal_id' => $animal->id,
             'performed_by' => $request->user()->id,
             'type' => ActionType::from($validated['type']),
@@ -73,19 +69,19 @@ final class ActionController extends Controller
             'performed_at' => $validated['performed_at'] ?? now(),
         ]);
 
-        return new ActionResource($action->load('performedBy:id,name'));
+        return redirect()->route('animals.show', $animal)->with('success', 'Action recorded successfully.');
     }
 
     /**
      * Remove the specified action.
      */
-    public function destroy(Action $action)
+    public function destroy(Action $action): \Illuminate\Http\RedirectResponse
     {
         Gate::authorize('delete', $action);
 
         $action->delete();
 
-        return response()->json(null, 204);
+        return redirect()->route('animals.show', $action->animal)->with('success', 'Action deleted successfully.');
     }
 
     /**

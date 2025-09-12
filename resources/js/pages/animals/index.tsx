@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
-import { animals } from '@/routes';
+import animals from '@/routes/animals';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, usePage } from '@inertiajs/react';
 import { Edit, Plus } from 'lucide-react';
@@ -31,6 +31,7 @@ interface Animal {
 
 interface AnimalsIndexProps {
     animals: Animal[];
+    [key: string]: unknown;
 }
 
 export default function AnimalsIndex() {
@@ -114,9 +115,9 @@ export default function AnimalsIndex() {
                                             </TableCell>
                                             <TableCell className="text-right">
                                                 <Button variant="outline" size="sm" asChild>
-                                                    <Link href={`/animals/${animal.id}/edit`}>
+                                                    <Link href={`/animals/${animal.id}`}>
                                                         <Edit className="mr-2 h-4 w-4" />
-                                                        Edit
+                                                        View Details
                                                     </Link>
                                                 </Button>
                                             </TableCell>

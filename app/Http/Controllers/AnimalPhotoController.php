@@ -4,32 +4,34 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
-use App\Http\Resources\AnimalPhotoResource;
 use App\Models\Animal;
 use App\Models\AnimalPhoto;
 use Illuminate\Http\Request;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
+use Inertia\Inertia;
 
 final class AnimalPhotoController extends Controller
 {
     /**
      * Display a listing of photos for an animal.
      */
-    public function index(Animal $animal): AnonymousResourceCollection
+    public function index(Animal $animal): \Inertia\Response
     {
-        Gate::authorize('viewAny', AnimalPhoto::class);
+        Gate::authorize('view', $animal);
 
         $photos = $animal->photos()->with('uploadedBy')->get();
 
-        return AnimalPhotoResource::collection($photos);
+        return Inertia::render('animals/photos', [
+            'animal' => $animal,
+            'photos' => $photos,
+        ]);
     }
 
     /**
      * Store a newly uploaded photo for an animal.
      */
-    public function store(Request $request, Animal $animal): AnimalPhotoResource
+    public function store(Request $request, Animal $animal): \Illuminate\Http\RedirectResponse|\App\Http\Resources\AnimalPhotoResource
     {
         Gate::authorize('create', [AnimalPhoto::class, $animal]);
 
@@ -44,24 +46,30 @@ final class AnimalPhotoController extends Controller
             $validated['is_primary'] = filter_var($validated['is_primary'], FILTER_VALIDATE_BOOLEAN);
         }
 
-        // Store the photo in public/animals/{animal_id}/
-        $path = $request->file('photo')->store("public/animals/{$animal->id}");
+        // Store the photo on the public disk in animals/{animal_id}/
+        // This ensures files are under storage/app/public and served via /storage
+        $path = $request->file('photo')->store("animals/{$animal->id}", 'public');
 
-        $animalPhoto = AnimalPhoto::create([
+        $photo = AnimalPhoto::create([
             'animal_id' => $animal->id,
             'uploaded_by' => $request->user()->id,
+            // Store normalized path without the "public/" prefix
             'path' => $path,
             'caption' => $validated['caption'] ?? null,
             'is_primary' => $validated['is_primary'] ?? false,
         ]);
 
-        return new AnimalPhotoResource($animalPhoto->fresh(['uploadedBy']));
+        if ($request->expectsJson()) {
+            return new \App\Http\Resources\AnimalPhotoResource($photo->load('uploadedBy'));
+        }
+
+        return redirect()->route('animals.show', $animal)->with('success', 'Photo uploaded successfully.');
     }
 
     /**
      * Update the specified photo (caption and primary status).
      */
-    public function update(Request $request, AnimalPhoto $animalPhoto): AnimalPhotoResource
+    public function update(Request $request, AnimalPhoto $animalPhoto): \Illuminate\Http\RedirectResponse|\App\Http\Resources\AnimalPhotoResource
     {
         Gate::authorize('update', $animalPhoto);
 
@@ -77,22 +85,31 @@ final class AnimalPhotoController extends Controller
 
         $animalPhoto->update($validated);
 
-            return new AnimalPhotoResource($animalPhoto->fresh(['uploadedBy']));
+        if ($request->expectsJson()) {
+            return new \App\Http\Resources\AnimalPhotoResource($animalPhoto->load('uploadedBy'));
+        }
+
+        return redirect()->route('animals.show', $animalPhoto->animal)->with('success', 'Photo updated successfully.');
     }
 
     /**
      * Remove the specified photo from storage.
      */
-    public function destroy(AnimalPhoto $animalPhoto)
+    public function destroy(Request $request, AnimalPhoto $animalPhoto): \Illuminate\Http\RedirectResponse|\Illuminate\Http\Response
     {
         Gate::authorize('delete', $animalPhoto);
 
-        // Delete the file from storage
-        Storage::delete($animalPhoto->path);
+        // Delete the file from the public disk. Normalize in case legacy paths contain 'public/'.
+        $relativePath = ltrim(str_replace('public/', '', $animalPhoto->path), '/');
+        Storage::disk('public')->delete($relativePath);
 
         // Delete the record
         $animalPhoto->delete();
 
-        return response()->json(null, 204);
+        if ($request->expectsJson()) {
+            return response()->noContent();
+        }
+
+        return redirect()->route('animals.show', $animalPhoto->animal)->with('success', 'Photo deleted successfully.');
     }
 }

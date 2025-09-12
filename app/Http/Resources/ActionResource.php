@@ -26,7 +26,10 @@ final class ActionResource extends JsonResource
             'updated_at' => $this->updated_at,
             
             // Relationships
-            'performed_by' => new UserResource($this->whenLoaded('performedBy')),
+            'performed_by' => $this->when(
+                $this->relationLoaded('performedBy'),
+                fn () => new UserResource($this->performedBy)
+            ),
         ];
     }
 }

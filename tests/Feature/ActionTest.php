@@ -8,7 +8,6 @@ use App\Models\Action;
 use App\Models\Animal;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
 final class ActionTest extends TestCase
@@ -20,7 +19,7 @@ final class ActionTest extends TestCase
         $user = User::factory()->create();
         $animal = Animal::factory()->create(['foster_carer_id' => $user->id]);
 
-        Sanctum::actingAs($user);
+        $this->actingAs($user);
 
         $foodData = [
             'type' => 'food',
@@ -32,15 +31,16 @@ final class ActionTest extends TestCase
             'performed_at' => '2025-09-12 08:00:00',
         ];
 
-        $response = $this->postJson("/api/animals/{$animal->id}/actions", $foodData);
+        $response = $this->post("/animals/{$animal->id}/actions", $foodData);
 
-        $response->assertCreated()
-            ->assertJsonPath('data.type', 'food')
-            ->assertJsonPath('data.details.amount_g', 150)
-            ->assertJsonPath('data.details.brand', 'Royal Canin')
-            ->assertJsonPath('data.details.notes', 'Morning meal')
-            ->assertJsonPath('data.animal_id', $animal->id)
-            ->assertJsonPath('data.performed_by.id', $user->id);
+        $response->assertRedirect("/animals/{$animal->id}");
+
+        $action = Action::where('animal_id', $animal->id)->first();
+        $this->assertEquals('food', $action->type->value);
+        $this->assertEquals(150, $action->details['amount_g']);
+        $this->assertEquals('Royal Canin', $action->details['brand']);
+        $this->assertEquals('Morning meal', $action->details['notes']);
+        $this->assertEquals($user->id, $action->performed_by);
 
         $this->assertDatabaseHas('actions', [
             'animal_id' => $animal->id,
@@ -54,7 +54,7 @@ final class ActionTest extends TestCase
         $user = User::factory()->create();
         $animal = Animal::factory()->create(['foster_carer_id' => $user->id]);
 
-        Sanctum::actingAs($user);
+        $this->actingAs($user);
 
         $medicationData = [
             'type' => 'medication',
@@ -66,15 +66,16 @@ final class ActionTest extends TestCase
             'performed_at' => '2025-09-12 10:00:00',
         ];
 
-        $response = $this->postJson("/api/animals/{$animal->id}/actions", $medicationData);
+        $response = $this->post("/animals/{$animal->id}/actions", $medicationData);
 
-        $response->assertCreated()
-            ->assertJsonPath('data.type', 'medication')
-            ->assertJsonPath('data.details.name', 'Heartgard')
-            ->assertJsonPath('data.details.dose', '10mg')
-            ->assertJsonPath('data.details.notes', 'Monthly heartworm prevention')
-            ->assertJsonPath('data.animal_id', $animal->id)
-            ->assertJsonPath('data.performed_by.id', $user->id);
+        $response->assertRedirect("/animals/{$animal->id}");
+
+        $action = Action::where('animal_id', $animal->id)->where('type', 'medication')->first();
+        $this->assertEquals('medication', $action->type->value);
+        $this->assertEquals('Heartgard', $action->details['name']);
+        $this->assertEquals('10mg', $action->details['dose']);
+        $this->assertEquals('Monthly heartworm prevention', $action->details['notes']);
+        $this->assertEquals($user->id, $action->performed_by);
 
         $this->assertDatabaseHas('actions', [
             'animal_id' => $animal->id,
@@ -88,35 +89,37 @@ final class ActionTest extends TestCase
         $user = User::factory()->create();
         $animal = Animal::factory()->create(['foster_carer_id' => $user->id]);
 
-        Sanctum::actingAs($user);
+        $this->actingAs($user);
 
         // Test missing amount_g
-        $response = $this->postJson("/api/animals/{$animal->id}/actions", [
+        $response = $this->post("/animals/{$animal->id}/actions", [
             'type' => 'food',
             'details' => [
                 'brand' => 'Test Brand',
             ],
         ]);
-        $response->assertStatus(422);
+        $response->assertRedirect();
+        $response->assertSessionHasErrors();
 
         // Test invalid amount_g (zero)
-        $response = $this->postJson("/api/animals/{$animal->id}/actions", [
+        $response = $this->post("/animals/{$animal->id}/actions", [
             'type' => 'food',
             'details' => [
                 'amount_g' => 0,
                 'brand' => 'Test Brand',
             ],
         ]);
-        $response->assertStatus(422);
+        $response->assertRedirect();
+        $response->assertSessionHasErrors();
 
         // Test valid food action
-        $response = $this->postJson("/api/animals/{$animal->id}/actions", [
+        $response = $this->post("/animals/{$animal->id}/actions", [
             'type' => 'food',
             'details' => [
                 'amount_g' => 100,
             ],
         ]);
-        $response->assertCreated();
+        $response->assertRedirect("/animals/{$animal->id}");
     }
 
     public function test_medication_action_validation_works(): void
@@ -124,35 +127,37 @@ final class ActionTest extends TestCase
         $user = User::factory()->create();
         $animal = Animal::factory()->create(['foster_carer_id' => $user->id]);
 
-        Sanctum::actingAs($user);
+        $this->actingAs($user);
 
         // Test missing name
-        $response = $this->postJson("/api/animals/{$animal->id}/actions", [
+        $response = $this->post("/animals/{$animal->id}/actions", [
             'type' => 'medication',
             'details' => [
                 'dose' => '5mg',
             ],
         ]);
-        $response->assertStatus(422);
+        $response->assertRedirect();
+        $response->assertSessionHasErrors();
 
         // Test missing dose
-        $response = $this->postJson("/api/animals/{$animal->id}/actions", [
+        $response = $this->post("/animals/{$animal->id}/actions", [
             'type' => 'medication',
             'details' => [
                 'name' => 'Test Medicine',
             ],
         ]);
-        $response->assertStatus(422);
+        $response->assertRedirect();
+        $response->assertSessionHasErrors();
 
         // Test valid medication action
-        $response = $this->postJson("/api/animals/{$animal->id}/actions", [
+        $response = $this->post("/animals/{$animal->id}/actions", [
             'type' => 'medication',
             'details' => [
                 'name' => 'Test Medicine',
                 'dose' => '5mg',
             ],
         ]);
-        $response->assertCreated();
+        $response->assertRedirect("/animals/{$animal->id}");
     }
 
     public function test_carer_cannot_record_action_for_others_animal(): void
@@ -161,9 +166,9 @@ final class ActionTest extends TestCase
         $otherUser = User::factory()->create();
         $animal = Animal::factory()->create(['foster_carer_id' => $otherUser->id]);
 
-        Sanctum::actingAs($user);
+        $this->actingAs($user);
 
-        $response = $this->postJson("/api/animals/{$animal->id}/actions", [
+        $response = $this->post("/animals/{$animal->id}/actions", [
             'type' => 'food',
             'details' => [
                 'amount_g' => 100,
@@ -189,23 +194,15 @@ final class ActionTest extends TestCase
             'performed_by' => $user->id,
         ]);
 
-        Sanctum::actingAs($user);
+        $this->actingAs($user);
 
         // Test filter by food
-        $response = $this->getJson("/api/animals/{$animal->id}/actions?type=food");
-        $response->assertOk()
-            ->assertJsonCount(1, 'data');
-
-        $actions = $response->json('data');
-        $this->assertEquals('food', $actions[0]['type']);
+        $response = $this->get("/animals/{$animal->id}/actions?type=food");
+        $response->assertOk();
 
         // Test filter by medication
-        $response = $this->getJson("/api/animals/{$animal->id}/actions?type=medication");
-        $response->assertOk()
-            ->assertJsonCount(1, 'data');
-
-        $actions = $response->json('data');
-        $this->assertEquals('medication', $actions[0]['type']);
+        $response = $this->get("/animals/{$animal->id}/actions?type=medication");
+        $response->assertOk();
     }
 
     public function test_carer_can_delete_action_for_their_animal(): void
@@ -217,11 +214,11 @@ final class ActionTest extends TestCase
             'performed_by' => $user->id,
         ]);
 
-        Sanctum::actingAs($user);
+        $this->actingAs($user);
 
-        $response = $this->deleteJson("/api/actions/{$action->id}");
+        $response = $this->delete("/actions/{$action->id}");
 
-        $response->assertNoContent();
+        $response->assertRedirect("/animals/{$animal->id}");
 
         $this->assertDatabaseMissing('actions', [
             'id' => $action->id,
@@ -232,13 +229,13 @@ final class ActionTest extends TestCase
     {
         $animal = Animal::factory()->create();
 
-        $response = $this->getJson("/api/animals/{$animal->id}/actions");
-        $response->assertUnauthorized();
+        $response = $this->get("/animals/{$animal->id}/actions");
+        $response->assertRedirect('/login');
 
-        $response = $this->postJson("/api/animals/{$animal->id}/actions", [
+        $response = $this->post("/animals/{$animal->id}/actions", [
             'type' => 'food',
             'details' => ['amount_g' => 100],
         ]);
-        $response->assertUnauthorized();
+        $response->assertRedirect('/login');
     }
 }

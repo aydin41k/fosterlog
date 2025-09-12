@@ -4,39 +4,36 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
-use App\Http\Resources\AnimalWeightResource;
 use App\Models\Animal;
 use App\Models\AnimalWeight;
 use Illuminate\Http\Request;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Gate;
+use Inertia\Inertia;
 
 final class AnimalWeightController extends Controller
 {
     /**
      * Display a listing of weight records for an animal.
      */
-    public function index(Animal $animal): AnonymousResourceCollection
+    public function index(Animal $animal): \Inertia\Response
     {
-        Gate::authorize('viewAny', AnimalWeight::class);
-        
-        // Only allow viewing weights for animals assigned to current user
-        if (request()->user()->id !== $animal->foster_carer_id) {
-            abort(403);
-        }
+        Gate::authorize('view', $animal);
 
         $weights = $animal->weights()
             ->with('recordedBy:id,name')
             ->orderBy('measured_at', 'desc')
             ->get();
 
-        return AnimalWeightResource::collection($weights);
+        return Inertia::render('animals/weights', [
+            'animal' => $animal,
+            'weights' => $weights,
+        ]);
     }
 
     /**
      * Store a newly created weight record.
      */
-    public function store(Request $request, Animal $animal): AnimalWeightResource
+    public function store(Request $request, Animal $animal): \Illuminate\Http\RedirectResponse
     {
         Gate::authorize('create', [AnimalWeight::class, $animal]);
 
@@ -46,7 +43,7 @@ final class AnimalWeightController extends Controller
             'notes' => 'nullable|string|max:1000',
         ]);
 
-        $animalWeight = AnimalWeight::create([
+        AnimalWeight::create([
             'animal_id' => $animal->id,
             'recorded_by' => $request->user()->id,
             'measured_at' => $validated['measured_at'] ?? now(),
@@ -54,18 +51,18 @@ final class AnimalWeightController extends Controller
             'notes' => $validated['notes'] ?? null,
         ]);
 
-        return new AnimalWeightResource($animalWeight->load('recordedBy:id,name'));
+        return redirect()->route('animals.show', $animal)->with('success', 'Weight record added successfully.');
     }
 
     /**
      * Remove the specified weight record.
      */
-    public function destroy(AnimalWeight $animalWeight)
+    public function destroy(AnimalWeight $animalWeight): \Illuminate\Http\RedirectResponse
     {
         Gate::authorize('delete', $animalWeight);
 
         $animalWeight->delete();
 
-        return response()->json(null, 204);
+        return redirect()->route('animals.show', $animalWeight->animal)->with('success', 'Weight record deleted successfully.');
     }
 }

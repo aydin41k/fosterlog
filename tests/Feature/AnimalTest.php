@@ -7,7 +7,6 @@ namespace Tests\Feature;
 use App\Models\Animal;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
 final class AnimalTest extends TestCase
@@ -18,24 +17,26 @@ final class AnimalTest extends TestCase
     {
         $user = User::factory()->create();
         $otherUser = User::factory()->create();
-        
+
         $userAnimals = Animal::factory()->count(2)->create(['foster_carer_id' => $user->id]);
         $otherUserAnimals = Animal::factory()->count(1)->create(['foster_carer_id' => $otherUser->id]);
 
-        Sanctum::actingAs($user);
+        $this->actingAs($user);
 
-        $response = $this->getJson('/api/animals');
+        $response = $this->get('/animals');
 
-        $response->assertOk()
-            ->assertJsonCount(2, 'data')
-            ->assertJsonPath('data.0.foster_carer_id', $user->id)
-            ->assertJsonPath('data.1.foster_carer_id', $user->id);
+        $response->assertOk();
+        // Check that the page contains the user's animals
+        $response->assertSee($userAnimals[0]->name);
+        $response->assertSee($userAnimals[1]->name);
+        // Should not see other user's animals
+        $response->assertDontSee($otherUserAnimals[0]->name);
     }
 
     public function test_authenticated_user_can_create_animal(): void
     {
         $user = User::factory()->create();
-        Sanctum::actingAs($user);
+        $this->actingAs($user);
 
         $animalData = [
             'name' => 'Fluffy',
@@ -47,12 +48,9 @@ final class AnimalTest extends TestCase
             'status' => 'in_foster',
         ];
 
-        $response = $this->postJson('/api/animals', $animalData);
+        $response = $this->post('/animals', $animalData);
 
-        $response->assertCreated()
-            ->assertJsonPath('data.name', 'Fluffy')
-            ->assertJsonPath('data.species', 'cat')
-            ->assertJsonPath('data.foster_carer_id', $user->id);
+        $response->assertRedirect('/animals');
 
         $this->assertDatabaseHas('animals', [
             'name' => 'Fluffy',
@@ -64,20 +62,22 @@ final class AnimalTest extends TestCase
     public function test_slug_is_auto_generated_from_name(): void
     {
         $user = User::factory()->create();
-        Sanctum::actingAs($user);
+        $this->actingAs($user);
 
-        $response = $this->postJson('/api/animals', [
+        $response = $this->post('/animals', [
             'name' => 'Test Animal Name',
         ]);
 
-        $response->assertCreated()
-            ->assertJsonPath('data.slug', 'test-animal-name');
+        $response->assertRedirect('/animals');
+
+        $animal = Animal::where('name', 'Test Animal Name')->first();
+        $this->assertEquals('test-animal-name', $animal->slug);
     }
 
     public function test_slug_uniqueness_is_enforced(): void
     {
         $user = User::factory()->create();
-        
+
         // Create first animal
         Animal::factory()->create([
             'name' => 'Duplicate Name',
@@ -85,15 +85,17 @@ final class AnimalTest extends TestCase
             'foster_carer_id' => $user->id,
         ]);
 
-        Sanctum::actingAs($user);
+        $this->actingAs($user);
 
         // Create second animal with same name
-        $response = $this->postJson('/api/animals', [
+        $response = $this->post('/animals', [
             'name' => 'Duplicate Name',
         ]);
 
-        $response->assertCreated()
-            ->assertJsonPath('data.slug', 'duplicate-name-1');
+        $response->assertRedirect('/animals');
+
+        $animal = Animal::where('name', 'Duplicate Name')->where('slug', 'duplicate-name-1')->first();
+        $this->assertNotNull($animal);
     }
 
     public function test_carer_can_view_any_animal(): void
@@ -102,13 +104,12 @@ final class AnimalTest extends TestCase
         $otherUser = User::factory()->create();
         $animal = Animal::factory()->create(['foster_carer_id' => $otherUser->id]);
 
-        Sanctum::actingAs($user);
+        $this->actingAs($user);
 
-        $response = $this->getJson("/api/animals/{$animal->id}");
+        $response = $this->get("/animals/{$animal->id}");
 
-        $response->assertOk()
-            ->assertJsonPath('data.id', $animal->id)
-            ->assertJsonPath('data.foster_carer_id', $otherUser->id);
+        $response->assertOk();
+        $response->assertSee($animal->name);
     }
 
     public function test_carer_can_only_update_their_own_animals(): void
@@ -118,16 +119,16 @@ final class AnimalTest extends TestCase
         $animal = Animal::factory()->create(['foster_carer_id' => $user->id]);
         $otherAnimal = Animal::factory()->create(['foster_carer_id' => $otherUser->id]);
 
-        Sanctum::actingAs($user);
+        $this->actingAs($user);
 
         // Can update own animal
-        $response = $this->putJson("/api/animals/{$animal->id}", [
+        $response = $this->put("/animals/{$animal->id}", [
             'name' => 'Updated Name',
         ]);
-        $response->assertOk();
+        $response->assertRedirect("/animals/{$animal->id}");
 
         // Cannot update other user's animal
-        $response = $this->putJson("/api/animals/{$otherAnimal->id}", [
+        $response = $this->put("/animals/{$otherAnimal->id}", [
             'name' => 'Hacked Name',
         ]);
         $response->assertForbidden();
@@ -140,15 +141,15 @@ final class AnimalTest extends TestCase
         $animal = Animal::factory()->create(['foster_carer_id' => $user->id]);
         $otherAnimal = Animal::factory()->create(['foster_carer_id' => $otherUser->id]);
 
-        Sanctum::actingAs($user);
+        $this->actingAs($user);
 
         // Can delete own animal
-        $response = $this->deleteJson("/api/animals/{$animal->id}");
-        $response->assertNoContent();
+        $response = $this->delete("/animals/{$animal->id}");
+        $response->assertRedirect('/animals');
         $this->assertSoftDeleted('animals', ['id' => $animal->id]);
 
         // Cannot delete other user's animal
-        $response = $this->deleteJson("/api/animals/{$otherAnimal->id}");
+        $response = $this->delete("/animals/{$otherAnimal->id}");
         $response->assertForbidden();
         $this->assertDatabaseHas('animals', ['id' => $otherAnimal->id]);
     }
@@ -185,45 +186,45 @@ final class AnimalTest extends TestCase
         $this->assertArrayNotHasKey('foster_carer', $responseData);
     }
 
-    public function test_unauthenticated_user_cannot_access_animal_api(): void
+    public function test_unauthenticated_user_cannot_access_animals(): void
     {
-        $response = $this->getJson('/api/animals');
-        $response->assertUnauthorized();
+        $response = $this->get('/animals');
+        $response->assertRedirect('/login');
     }
 
     public function test_animal_validation_works(): void
     {
         $user = User::factory()->create();
-        Sanctum::actingAs($user);
+        $this->actingAs($user);
 
         // Test required name
-        $response = $this->postJson('/api/animals', []);
-        $response->assertUnprocessable()
-            ->assertJsonValidationErrors(['name']);
+        $response = $this->post('/animals', []);
+        $response->assertRedirect();
+        $response->assertSessionHasErrors(['name']);
 
         // Test invalid species
-        $response = $this->postJson('/api/animals', [
+        $response = $this->post('/animals', [
             'name' => 'Test Animal',
             'species' => 'invalid_species',
         ]);
-        $response->assertUnprocessable()
-            ->assertJsonValidationErrors(['species']);
+        $response->assertRedirect();
+        $response->assertSessionHasErrors(['species']);
 
         // Test invalid sex
-        $response = $this->postJson('/api/animals', [
+        $response = $this->post('/animals', [
             'name' => 'Test Animal',
             'sex' => 'invalid_sex',
         ]);
-        $response->assertUnprocessable()
-            ->assertJsonValidationErrors(['sex']);
+        $response->assertRedirect();
+        $response->assertSessionHasErrors(['sex']);
 
         // Test invalid status
-        $response = $this->postJson('/api/animals', [
+        $response = $this->post('/animals', [
             'name' => 'Test Animal',
             'status' => 'invalid_status',
         ]);
-        $response->assertUnprocessable()
-            ->assertJsonValidationErrors(['status']);
+        $response->assertRedirect();
+        $response->assertSessionHasErrors(['status']);
     }
 
     public function test_available_scope_works(): void
@@ -248,15 +249,15 @@ final class AnimalTest extends TestCase
 
         $originalSlug = $animal->slug;
 
-        Sanctum::actingAs($user);
+        $this->actingAs($user);
 
-        $response = $this->putJson("/api/animals/{$animal->id}", [
+        $response = $this->put("/animals/{$animal->id}", [
             'name' => 'New Name',
         ]);
 
-        $response->assertOk();
+        $response->assertRedirect("/animals/{$animal->id}");
         $animal->refresh();
-        
+
         $this->assertNotEquals($originalSlug, $animal->slug);
         $this->assertEquals('new-name', $animal->slug);
     }

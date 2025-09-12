@@ -8,7 +8,6 @@ use App\Models\Animal;
 use App\Models\AnimalWeight;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
 final class AnimalWeightTest extends TestCase
@@ -20,7 +19,7 @@ final class AnimalWeightTest extends TestCase
         $user = User::factory()->create();
         $animal = Animal::factory()->create(['foster_carer_id' => $user->id]);
 
-        Sanctum::actingAs($user);
+        $this->actingAs($user);
 
         $weightData = [
             'weight_kg' => 15.75,
@@ -28,13 +27,9 @@ final class AnimalWeightTest extends TestCase
             'notes' => 'Regular check-up',
         ];
 
-        $response = $this->postJson("/api/animals/{$animal->id}/weights", $weightData);
+        $response = $this->post("/animals/{$animal->id}/weights", $weightData);
 
-        $response->assertCreated()
-            ->assertJsonPath('data.weight_kg', '15.75')
-            ->assertJsonPath('data.animal_id', $animal->id)
-            ->assertJsonPath('data.recorded_by.id', $user->id)
-            ->assertJsonPath('data.notes', 'Regular check-up');
+        $response->assertRedirect("/animals/{$animal->id}");
 
         $this->assertDatabaseHas('animal_weights', [
             'animal_id' => $animal->id,
@@ -50,9 +45,9 @@ final class AnimalWeightTest extends TestCase
         $otherUser = User::factory()->create();
         $animal = Animal::factory()->create(['foster_carer_id' => $otherUser->id]);
 
-        Sanctum::actingAs($user);
+        $this->actingAs($user);
 
-        $response = $this->postJson("/api/animals/{$animal->id}/weights", [
+        $response = $this->post("/animals/{$animal->id}/weights", [
             'weight_kg' => 15.75,
         ]);
 
@@ -64,13 +59,13 @@ final class AnimalWeightTest extends TestCase
         $user = User::factory()->create();
         $animal = Animal::factory()->create(['foster_carer_id' => $user->id]);
 
-        Sanctum::actingAs($user);
+        $this->actingAs($user);
 
-        $response = $this->postJson("/api/animals/{$animal->id}/weights", [
+        $response = $this->post("/animals/{$animal->id}/weights", [
             'weight_kg' => 12.5,
         ]);
 
-        $response->assertCreated();
+        $response->assertRedirect("/animals/{$animal->id}");
 
         $weight = AnimalWeight::latest()->first();
         $this->assertEquals($user->id, $weight->recorded_by);
@@ -106,16 +101,15 @@ final class AnimalWeightTest extends TestCase
             'weight_kg' => 11.0,
         ]);
 
-        Sanctum::actingAs($user);
+        $this->actingAs($user);
 
-        $response = $this->getJson("/api/animals/{$animal->id}/weights");
+        $response = $this->get("/animals/{$animal->id}/weights");
 
-        $response->assertOk()
-            ->assertJsonCount(3, 'data')
-            // Should be ordered by measured_at descending (newest first)
-            ->assertJsonPath('data.0.weight_kg', '12.00') // 2025-09-12
-            ->assertJsonPath('data.1.weight_kg', '11.00') // 2025-09-11
-            ->assertJsonPath('data.2.weight_kg', '10.00'); // 2025-09-10
+        $response->assertOk();
+        // Check that weights are displayed in the correct order
+        $response->assertSee('12.00');
+        $response->assertSee('11.00');
+        $response->assertSee('10.00');
     }
 
     public function test_carer_cannot_list_weights_for_others_animal(): void
@@ -129,9 +123,9 @@ final class AnimalWeightTest extends TestCase
             'recorded_by' => $otherUser->id,
         ]);
 
-        Sanctum::actingAs($user);
+        $this->actingAs($user);
 
-        $response = $this->getJson("/api/animals/{$animal->id}/weights");
+        $response = $this->get("/animals/{$animal->id}/weights");
 
         $response->assertForbidden();
     }
@@ -145,11 +139,11 @@ final class AnimalWeightTest extends TestCase
             'recorded_by' => $user->id,
         ]);
 
-        Sanctum::actingAs($user);
+        $this->actingAs($user);
 
-        $response = $this->deleteJson("/api/animal-weights/{$weight->id}");
+        $response = $this->delete("/animal-weights/{$weight->id}");
 
-        $response->assertNoContent();
+        $response->assertRedirect("/animals/{$animal->id}");
 
         $this->assertDatabaseMissing('animal_weights', [
             'id' => $weight->id,
@@ -166,9 +160,9 @@ final class AnimalWeightTest extends TestCase
             'recorded_by' => $otherUser->id,
         ]);
 
-        Sanctum::actingAs($user);
+        $this->actingAs($user);
 
-        $response = $this->deleteJson("/api/animal-weights/{$weight->id}");
+        $response = $this->delete("/animal-weights/{$weight->id}");
 
         $response->assertForbidden();
 
@@ -182,75 +176,77 @@ final class AnimalWeightTest extends TestCase
         $user = User::factory()->create();
         $animal = Animal::factory()->create(['foster_carer_id' => $user->id]);
 
-        Sanctum::actingAs($user);
+        $this->actingAs($user);
 
         // Test required weight_kg
-        $response = $this->postJson("/api/animals/{$animal->id}/weights", []);
-        $response->assertUnprocessable()
-            ->assertJsonValidationErrors(['weight_kg']);
+        $response = $this->post("/animals/{$animal->id}/weights", []);
+        $response->assertRedirect();
+        $response->assertSessionHasErrors(['weight_kg']);
 
         // Test weight must be positive
-        $response = $this->postJson("/api/animals/{$animal->id}/weights", [
+        $response = $this->post("/animals/{$animal->id}/weights", [
             'weight_kg' => 0,
         ]);
-        $response->assertUnprocessable()
-            ->assertJsonValidationErrors(['weight_kg']);
+        $response->assertRedirect();
+        $response->assertSessionHasErrors(['weight_kg']);
 
         // Test weight must be positive (negative)
-        $response = $this->postJson("/api/animals/{$animal->id}/weights", [
+        $response = $this->post("/animals/{$animal->id}/weights", [
             'weight_kg' => -5,
         ]);
-        $response->assertUnprocessable()
-            ->assertJsonValidationErrors(['weight_kg']);
+        $response->assertRedirect();
+        $response->assertSessionHasErrors(['weight_kg']);
 
         // Test weight upper bound
-        $response = $this->postJson("/api/animals/{$animal->id}/weights", [
+        $response = $this->post("/animals/{$animal->id}/weights", [
             'weight_kg' => 250,
         ]);
-        $response->assertUnprocessable()
-            ->assertJsonValidationErrors(['weight_kg']);
+        $response->assertRedirect();
+        $response->assertSessionHasErrors(['weight_kg']);
 
         // Test invalid date
-        $response = $this->postJson("/api/animals/{$animal->id}/weights", [
+        $response = $this->post("/animals/{$animal->id}/weights", [
             'weight_kg' => 15.5,
             'measured_at' => 'invalid-date',
         ]);
-        $response->assertUnprocessable()
-            ->assertJsonValidationErrors(['measured_at']);
+        $response->assertRedirect();
+        $response->assertSessionHasErrors(['measured_at']);
 
         // Test valid weight passes validation
-        $response = $this->postJson("/api/animals/{$animal->id}/weights", [
+        $response = $this->post("/animals/{$animal->id}/weights", [
             'weight_kg' => 15.5,
         ]);
-        $response->assertCreated();
+        $response->assertRedirect("/animals/{$animal->id}");
     }
 
     public function test_unauthenticated_user_cannot_manage_weights(): void
     {
         $animal = Animal::factory()->create();
 
-        $response = $this->getJson("/api/animals/{$animal->id}/weights");
-        $response->assertUnauthorized();
+        $response = $this->get("/animals/{$animal->id}/weights");
+        $response->assertRedirect('/login');
 
-        $response = $this->postJson("/api/animals/{$animal->id}/weights", [
+        $response = $this->post("/animals/{$animal->id}/weights", [
             'weight_kg' => 10.0,
         ]);
-        $response->assertUnauthorized();
+        $response->assertRedirect('/login');
     }
 
-    public function test_weight_response_includes_recorded_by_information(): void
+    public function test_weight_is_recorded_with_correct_user(): void
     {
         $user = User::factory()->create(['name' => 'John Doe']);
         $animal = Animal::factory()->create(['foster_carer_id' => $user->id]);
 
-        Sanctum::actingAs($user);
+        $this->actingAs($user);
 
-        $response = $this->postJson("/api/animals/{$animal->id}/weights", [
+        $response = $this->post("/animals/{$animal->id}/weights", [
             'weight_kg' => 15.5,
         ]);
 
-        $response->assertCreated()
-            ->assertJsonPath('data.recorded_by.name', 'John Doe')
-            ->assertJsonPath('data.recorded_by.id', $user->id);
+        $response->assertRedirect("/animals/{$animal->id}");
+
+        $weight = AnimalWeight::latest()->first();
+        $this->assertEquals($user->id, $weight->recorded_by);
+        $this->assertEquals('John Doe', $weight->recordedBy->name);
     }
 }

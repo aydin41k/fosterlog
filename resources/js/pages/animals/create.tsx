@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import AppLayout from '@/layouts/app-layout';
-import { animals } from '@/routes';
+import animals from '@/routes/animals';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router, useForm } from '@inertiajs/react';
 import { ArrowLeft, Save } from 'lucide-react';
@@ -49,7 +49,7 @@ export default function AnimalsCreate() {
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
-        form.post(animals.store().url, {
+        form.post(animals.store.form().action, {
             onSuccess: () => {
                 router.visit(animals.index().url);
             },

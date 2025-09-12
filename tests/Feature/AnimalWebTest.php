@@ -19,7 +19,9 @@ final class AnimalWebTest extends TestCase
     {
         parent::setUp();
 
-        $this->user = User::factory()->create();
+        $this->user = User::factory()->create([
+            'email_verified_at' => now(),
+        ]);
         $this->actingAs($this->user);
     }
 
@@ -38,15 +40,14 @@ final class AnimalWebTest extends TestCase
             'species' => 'dog',
         ]);
 
-        $response = $this->get('/animals');
-
-        $response->assertStatus(200);
-        $response->assertInertia(fn ($page) => $page
-            ->component('animals/index')
-            ->has('animals', 2)
-            ->where('animals.0.name', 'Test Cat')
-            ->where('animals.1.name', 'Test Dog')
-        );
+        // Visit the page and check the Inertia component
+        $this->get('/animals')
+            ->assertInertia(fn ($page) => $page
+                ->component('animals/index')
+                ->has('animals', 2)
+                ->where('animals.0.name', 'Test Cat')
+                ->where('animals.1.name', 'Test Dog')
+            );
     }
 
     public function test_animals_create_page_loads(): void
@@ -103,5 +104,68 @@ final class AnimalWebTest extends TestCase
             ->has('stats')
             ->where('stats.animals_count', 1)
         );
+    }
+
+    public function test_animal_show_page_loads(): void
+    {
+        $animal = Animal::factory()->create([
+            'foster_carer_id' => $this->user->id,
+            'name' => 'Show Test Animal',
+            'species' => 'cat',
+        ]);
+
+        $response = $this->get("/animals/{$animal->id}");
+
+        $response->assertStatus(200);
+        $response->assertInertia(fn ($page) => $page
+            ->component('animals/show')
+            ->has('animal')
+            ->where('animal.name', 'Show Test Animal')
+            ->where('animal.species', 'cat')
+        );
+    }
+
+    public function test_animal_can_be_deleted(): void
+    {
+        $animal = Animal::factory()->create([
+            'foster_carer_id' => $this->user->id,
+            'name' => 'Delete Test Animal',
+        ]);
+
+        // Verify animal exists before deletion
+        $this->assertDatabaseHas('animals', [
+            'id' => $animal->id,
+            'name' => 'Delete Test Animal',
+        ]);
+
+        // Delete the animal
+        $response = $this->delete("/animals/{$animal->id}");
+
+        // Assert redirect to animals index with success message
+        $response->assertRedirect('/animals');
+        $response->assertSessionHas('success', 'Animal deleted successfully.');
+
+        // Verify animal is soft deleted
+        $this->assertSoftDeleted('animals', [
+            'id' => $animal->id,
+            'name' => 'Delete Test Animal',
+        ]);
+    }
+
+    public function test_cannot_delete_others_animal(): void
+    {
+        $otherUser = User::factory()->create();
+        $animal = Animal::factory()->create([
+            'foster_carer_id' => $otherUser->id,
+        ]);
+
+        $response = $this->delete("/animals/{$animal->id}");
+
+        $response->assertStatus(403);
+
+        // Verify animal still exists and is not deleted
+        $this->assertDatabaseHas('animals', [
+            'id' => $animal->id,
+        ]);
     }
 }

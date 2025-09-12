@@ -24,6 +24,7 @@ interface DashboardProps {
             measured_at: string;
         }>;
     };
+    [key: string]: unknown;
 }
 
 export default function Dashboard() {

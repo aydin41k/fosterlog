@@ -27,7 +27,10 @@ final class AnimalPhotoResource extends JsonResource
             'updated_at' => $this->updated_at,
             
             // Relationships
-            'uploaded_by' => new UserResource($this->whenLoaded('uploadedBy')),
+            'uploaded_by' => $this->when(
+                $this->relationLoaded('uploadedBy'),
+                fn () => new UserResource($this->uploadedBy)
+            ),
         ];
     }
 }

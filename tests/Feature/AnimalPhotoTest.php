@@ -10,7 +10,6 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
-use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
 final class AnimalPhotoTest extends TestCase
@@ -28,21 +27,23 @@ final class AnimalPhotoTest extends TestCase
         $user = User::factory()->create();
         $animal = Animal::factory()->create(['foster_carer_id' => $user->id]);
 
-        Sanctum::actingAs($user);
+        $this->actingAs($user);
 
         $file = UploadedFile::fake()->image('test-photo.jpg');
 
-        $response = $this->postJson("/api/animals/{$animal->id}/photos", [
+        $response = $this->post("/animals/{$animal->id}/photos", [
             'photo' => $file,
             'caption' => 'Test caption',
             'is_primary' => true,
         ]);
 
-        $response->assertOk()
-            ->assertJsonPath('data.caption', 'Test caption')
-            ->assertJsonPath('data.is_primary', true)
-            ->assertJsonPath('data.animal_id', $animal->id)
-            ->assertJsonPath('data.uploaded_by.id', $user->id);
+        $response->assertRedirect("/animals/{$animal->id}");
+
+        $photo = AnimalPhoto::where('animal_id', $animal->id)->first();
+        $this->assertNotNull($photo);
+        $this->assertEquals('Test caption', $photo->caption);
+        $this->assertTrue($photo->is_primary);
+        $this->assertEquals($user->id, $photo->uploaded_by);
 
         $this->assertDatabaseHas('animal_photos', [
             'animal_id' => $animal->id,
@@ -63,11 +64,11 @@ final class AnimalPhotoTest extends TestCase
         $otherUser = User::factory()->create();
         $animal = Animal::factory()->create(['foster_carer_id' => $otherUser->id]);
 
-        Sanctum::actingAs($user);
+        $this->actingAs($user);
 
         $file = UploadedFile::fake()->image('test-photo.jpg');
 
-        $response = $this->postJson("/api/animals/{$animal->id}/photos", [
+        $response = $this->post("/animals/{$animal->id}/photos", [
             'photo' => $file,
         ]);
 
@@ -89,23 +90,23 @@ final class AnimalPhotoTest extends TestCase
         Sanctum::actingAs($user);
         
         // Set first photo as primary
-        $this->putJson("/api/animal-photos/{$firstPhoto->id}", [
+        $this->putJson(route('animal-photos.update', $firstPhoto), [
             'is_primary' => true,
         ])->assertOk();
 
         $firstPhoto->refresh();
         $this->assertTrue($firstPhoto->is_primary);
 
-        // Create second photo 
+        // Create second photo
         $file = UploadedFile::fake()->image('second-photo.jpg');
-        $response = $this->postJson("/api/animals/{$animal->id}/photos", [
+        $response = $this->postJson(route('animals.photos.store', $animal), [
             'photo' => $file,
         ]);
         $response->assertCreated();
 
         // Now update second photo to be primary - this should unset the first
         $secondPhoto = AnimalPhoto::latest()->first();
-        $this->putJson("/api/animal-photos/{$secondPhoto->id}", [
+        $this->putJson(route('animal-photos.update', $secondPhoto), [
             'is_primary' => true,
         ])->assertOk();
 
@@ -129,16 +130,14 @@ final class AnimalPhotoTest extends TestCase
             'is_primary' => false,
         ]);
 
-        Sanctum::actingAs($user);
+        $this->actingAs($user);
 
-        $response = $this->putJson("/api/animal-photos/{$photo->id}", [
+        $response = $this->put("/animal-photos/{$photo->id}", [
             'caption' => 'Updated caption',
             'is_primary' => true,
         ]);
 
-        $response->assertOk()
-            ->assertJsonPath('data.caption', 'Updated caption')
-            ->assertJsonPath('data.is_primary', true);
+        $response->assertRedirect("/animals/{$animal->id}");
 
         $photo->refresh();
         $this->assertEquals('Updated caption', $photo->caption);
@@ -155,9 +154,9 @@ final class AnimalPhotoTest extends TestCase
             'uploaded_by' => $otherUser->id,
         ]);
 
-        Sanctum::actingAs($user);
+        $this->actingAs($user);
 
-        $response = $this->putJson("/api/animal-photos/{$photo->id}", [
+        $response = $this->put("/animal-photos/{$photo->id}", [
             'caption' => 'Hacked caption',
         ]);
 
@@ -181,11 +180,11 @@ final class AnimalPhotoTest extends TestCase
             'path' => $path,
         ]);
 
-        Sanctum::actingAs($user);
+        $this->actingAs($user);
 
-        $response = $this->deleteJson("/api/animal-photos/{$photo->id}");
+        $response = $this->delete("/animal-photos/{$photo->id}");
 
-        $response->assertNoContent();
+        $response->assertRedirect("/animals/{$animal->id}");
 
         $this->assertDatabaseMissing('animal_photos', [
             'id' => $photo->id,
@@ -205,9 +204,9 @@ final class AnimalPhotoTest extends TestCase
             'uploaded_by' => $otherUser->id,
         ]);
 
-        Sanctum::actingAs($user);
+        $this->actingAs($user);
 
-        $response = $this->deleteJson("/api/animal-photos/{$photo->id}");
+        $response = $this->delete("/animal-photos/{$photo->id}");
 
         $response->assertForbidden();
 
@@ -220,18 +219,17 @@ final class AnimalPhotoTest extends TestCase
     {
         $user = User::factory()->create();
         $animal = Animal::factory()->create(['foster_carer_id' => $user->id]);
-        
+
         AnimalPhoto::factory()->count(3)->create([
             'animal_id' => $animal->id,
             'uploaded_by' => $user->id,
         ]);
 
-        Sanctum::actingAs($user);
+        $this->actingAs($user);
 
-        $response = $this->getJson("/api/animals/{$animal->id}/photos");
+        $response = $this->get("/animals/{$animal->id}/photos");
 
-        $response->assertOk()
-            ->assertJsonCount(3, 'data');
+        $response->assertOk();
     }
 
     public function test_public_animal_endpoint_includes_primary_photo_url(): void
@@ -260,41 +258,41 @@ final class AnimalPhotoTest extends TestCase
         $user = User::factory()->create();
         $animal = Animal::factory()->create(['foster_carer_id' => $user->id]);
 
-        Sanctum::actingAs($user);
+        $this->actingAs($user);
 
         // Test missing photo
-        $response = $this->postJson("/api/animals/{$animal->id}/photos", []);
-        $response->assertUnprocessable()
-            ->assertJsonValidationErrors(['photo']);
+        $response = $this->post("/animals/{$animal->id}/photos", []);
+        $response->assertRedirect();
+        $response->assertSessionHasErrors(['photo']);
 
         // Test invalid file type
         $file = UploadedFile::fake()->create('document.pdf', 1024);
-        $response = $this->postJson("/api/animals/{$animal->id}/photos", [
+        $response = $this->post("/animals/{$animal->id}/photos", [
             'photo' => $file,
         ]);
-        $response->assertUnprocessable()
-            ->assertJsonValidationErrors(['photo']);
+        $response->assertRedirect();
+        $response->assertSessionHasErrors(['photo']);
 
         // Test file too large (over 5MB)
         $largeFile = UploadedFile::fake()->image('large.jpg')->size(6000);
-        $response = $this->postJson("/api/animals/{$animal->id}/photos", [
+        $response = $this->post("/animals/{$animal->id}/photos", [
             'photo' => $largeFile,
         ]);
-        $response->assertUnprocessable()
-            ->assertJsonValidationErrors(['photo']);
+        $response->assertRedirect();
+        $response->assertSessionHasErrors(['photo']);
     }
 
     public function test_unauthenticated_user_cannot_manage_photos(): void
     {
         $animal = Animal::factory()->create();
 
-        $response = $this->getJson("/api/animals/{$animal->id}/photos");
-        $response->assertUnauthorized();
+        $response = $this->get("/animals/{$animal->id}/photos");
+        $response->assertRedirect('/login');
 
         $file = UploadedFile::fake()->image('test.jpg');
-        $response = $this->postJson("/api/animals/{$animal->id}/photos", [
+        $response = $this->post("/animals/{$animal->id}/photos", [
             'photo' => $file,
         ]);
-        $response->assertUnauthorized();
+        $response->assertRedirect('/login');
     }
 }

@@ -63,6 +63,10 @@ final class AnimalPhoto extends Model
 
     public function getUrlAttribute(): string
     {
-        return Storage::url($this->path);
+        // Prefer a host-agnostic relative URL to avoid APP_URL mismatches in dev
+        // Storage::url('public/animals/7/foo.jpg') => '/storage/animals/7/foo.jpg'
+        $path = $this->path;
+        $relative = '/storage/' . ltrim(str_replace('public/', '', $path), '/');
+        return $relative;
     }
 }

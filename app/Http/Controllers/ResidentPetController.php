@@ -4,20 +4,18 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
-use App\Http\Resources\ResidentPetResource;
 use App\Models\ResidentPet;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
+use Inertia\Inertia;
 
 final class ResidentPetController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request): AnonymousResourceCollection
+    public function index(Request $request): \Inertia\Response
     {
         Gate::authorize('viewAny', ResidentPet::class);
 
@@ -25,13 +23,15 @@ final class ResidentPetController extends Controller
             ->with(['user'])
             ->get();
 
-        return ResidentPetResource::collection($residentPets);
+        return Inertia::render('resident-pets/index', [
+            'residentPets' => $residentPets,
+        ]);
     }
 
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request): ResidentPetResource
+    public function store(Request $request): \Illuminate\Http\RedirectResponse
     {
         Gate::authorize('create', ResidentPet::class);
 
@@ -42,32 +42,32 @@ final class ResidentPetController extends Controller
             'notes' => 'nullable|string',
         ]);
 
-        $residentPet = ResidentPet::create([
+        ResidentPet::create([
             'user_id' => $request->user()->id,
             ...$validated,
         ]);
 
-        $residentPet->load(['user']);
-
-        return new ResidentPetResource($residentPet);
+        return redirect()->route('resident-pets.index')->with('success', 'Resident pet added successfully.');
     }
 
     /**
      * Display the specified resource.
      */
-    public function show(ResidentPet $residentPet): ResidentPetResource
+    public function show(ResidentPet $residentPet): \Inertia\Response
     {
         Gate::authorize('view', $residentPet);
 
         $residentPet->load(['user']);
 
-        return new ResidentPetResource($residentPet);
+        return Inertia::render('resident-pets/show', [
+            'residentPet' => $residentPet,
+        ]);
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, ResidentPet $residentPet): ResidentPetResource
+    public function update(Request $request, ResidentPet $residentPet): \Illuminate\Http\RedirectResponse
     {
         Gate::authorize('update', $residentPet);
 
@@ -80,20 +80,18 @@ final class ResidentPetController extends Controller
 
         $residentPet->update($validated);
 
-        $residentPet->load(['user']);
-
-        return new ResidentPetResource($residentPet);
+        return redirect()->route('resident-pets.show', $residentPet)->with('success', 'Resident pet updated successfully.');
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(ResidentPet $residentPet)
+    public function destroy(ResidentPet $residentPet): \Illuminate\Http\RedirectResponse
     {
         Gate::authorize('delete', $residentPet);
 
         $residentPet->delete();
 
-        return response()->json(null, 204);
+        return redirect()->route('resident-pets.index')->with('success', 'Resident pet deleted successfully.');
     }
 }
