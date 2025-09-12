@@ -68,22 +68,31 @@ final class AnimalResource extends JsonResource
 
         $dob = Carbon::parse($this->dob);
         $now = Carbon::now();
-        
-        $years = $dob->diffInYears($now);
-        $months = $dob->copy()->addYears($years)->diffInMonths($now);
-        
-        if ($years === 0) {
-            return $months === 1 ? '1 month' : "{$months} months";
+
+        // diff in days
+        $days = $dob->copy()->diffInDays($now);
+
+        if ($days < 84) {
+            $weeks = (int) floor($dob->copy()->diffInWeeks($now));
+            return $weeks === 1 ? '1 week old' : "{$weeks} weeks old";
         }
-        
-        if ($months === 0) {
-            return $years === 1 ? '1 year' : "{$years} years";
+
+        if ($days < 730) {
+            $months = (int) floor($dob->copy()->diffInMonths($now));
+            if ($months > 11) {
+                $years = (int) floor($dob->copy()->diffInYears($now));
+                $yearOld = $years === 1 ? '1 year old' : "{$years} years old";
+                $months -= 12;
+                if (!$months) {
+                    return $yearOld;
+                }
+                $monthOld = $months === 1 ? '1 month old' : "{$months} months old";
+                return "{$yearOld}, {$monthOld}";
+            }
+            return $months === 1 ? '1 month old' : "{$months} months old";
         }
-        
-        $yearText = $years === 1 ? 'year' : 'years';
-        $monthText = $months === 1 ? 'month' : 'months';
-        
-        return "{$years} {$yearText}, {$months} {$monthText}";
+
+        return floor($dob->copy()->diffInYears($now)) . ' years old';
     }
 
     /**

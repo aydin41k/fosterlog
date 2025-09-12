@@ -39,26 +39,26 @@ export default function AnimalsIndex() {
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="My Animals" />
+            <Head title="My Pets" />
             <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl font-bold">My Animals</h1>
+                        <h1 className="text-2xl font-bold">My Pets</h1>
                         <p className="text-muted-foreground">
-                            Manage your foster animals and their information.
+                            Manage your foster pets and their information.
                         </p>
                     </div>
                     <Button asChild>
                         <Link href={animals.create().url}>
                             <Plus className="mr-2 h-4 w-4" />
-                            Add Animal
+                            Add a Pet
                         </Link>
                     </Button>
                 </div>
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>Animals ({animalsList.length})</CardTitle>
+                        <CardTitle>Pets ({animalsList.length})</CardTitle>
                     </CardHeader>
                     <CardContent>
                         {animalsList.length > 0 ? (

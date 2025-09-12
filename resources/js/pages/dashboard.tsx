@@ -38,12 +38,12 @@ export default function Dashboard() {
                 <div className="grid auto-rows-min gap-4 md:grid-cols-3">
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">My Animals</CardTitle>
+                            <CardTitle className="text-sm font-medium">My Pets</CardTitle>
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold">{stats.animals_count}</div>
                             <p className="text-xs text-muted-foreground">
-                                Animals in foster care
+                                Pets in foster care
                             </p>
                         </CardContent>
                     </Card>
