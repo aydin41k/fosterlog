@@ -11,6 +11,7 @@ import animals from '@/routes/animals/index';
 import actionRoutes from '@/routes/actions/index';
 import { useCallback, useEffect, useState } from 'react';
 import { Activity, Filter, Plus, Trash2, UtensilsCrossed, Pill } from 'lucide-react';
+import { getXsrfToken } from '@/lib/csrf';
 
 interface Animal {
     id: number;
@@ -105,7 +106,8 @@ export default function ActionsTab({ animal }: ActionsTabProps) {
                 headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',
-                    'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content || '',
+                    'X-XSRF-TOKEN': getXsrfToken(),
+                    'X-Requested-With': 'XMLHttpRequest',
                 },
                 body: JSON.stringify({
                     type: actionType,
@@ -156,8 +158,9 @@ export default function ActionsTab({ animal }: ActionsTabProps) {
             const response = await fetch(actionRoutes.destroy.url(actionId), {
                 method: 'DELETE',
                 headers: {
-                    'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content || '',
+                    'X-XSRF-TOKEN': getXsrfToken(),
                     'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
                 },
                 credentials: 'same-origin',
             });

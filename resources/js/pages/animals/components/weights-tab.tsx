@@ -10,6 +10,7 @@ import animals from '@/routes/animals/index';
 import animalWeights from '@/routes/animal-weights/index';
 import { useCallback, useEffect, useState } from 'react';
 import { Plus, Scale, Trash2, TrendingUp } from 'lucide-react';
+import { getXsrfToken } from '@/lib/csrf';
 
 interface Animal {
     id: number;
@@ -76,12 +77,7 @@ export default function WeightsTab({ animal }: WeightsTabProps) {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content || '',
-                    // Some setups (e.g., Sanctum) expect X-XSRF-TOKEN from cookie
-                    'X-XSRF-TOKEN': (() => {
-                        const match = document.cookie.split('; ').find((row) => row.startsWith('XSRF-TOKEN='));
-                        return match ? decodeURIComponent(match.split('=')[1]) : '';
-                    })(),
+                    'X-XSRF-TOKEN': getXsrfToken(),
                 },
                 body: JSON.stringify({
                     weight_kg: addForm.data.weight_kg,
@@ -124,8 +120,9 @@ export default function WeightsTab({ animal }: WeightsTabProps) {
             const response = await fetch(animalWeights.destroy.url(weightId), {
                 method: 'DELETE',
                 headers: {
-                    'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content || '',
+                    'X-XSRF-TOKEN': getXsrfToken(),
                     'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
                 },
                 credentials: 'same-origin',
             });

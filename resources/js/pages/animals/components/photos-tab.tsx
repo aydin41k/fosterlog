@@ -10,6 +10,7 @@ import animals from '@/routes/animals/index';
 import animalPhotos from '@/routes/animal-photos/index';
 import { useState } from 'react';
 import { Camera, Star, Trash2, Upload } from 'lucide-react';
+import { getXsrfToken } from '@/lib/csrf';
 
 interface Animal {
     id: number;
@@ -78,7 +79,7 @@ export default function PhotosTab({ animal }: PhotosTabProps) {
         setUploading(true);
 
         try {
-            const token = (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content || '';
+            const token = getXsrfToken();
             const url = animals.photos.url(animal.id);
             if (DEBUG) {
                  
@@ -98,8 +99,9 @@ export default function PhotosTab({ animal }: PhotosTabProps) {
             const response = await fetch(url, {
                 method: 'POST',
                 headers: {
-                    'X-CSRF-TOKEN': token,
+                    'X-XSRF-TOKEN': token,
                     'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
                 },
                 body: formData,
                 credentials: 'same-origin',
