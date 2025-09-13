@@ -46,9 +46,12 @@ final class AnimalPhotoController extends Controller
             $validated['is_primary'] = filter_var($validated['is_primary'], FILTER_VALIDATE_BOOLEAN);
         }
 
-        // Store the photo on the public disk in animals/{animal_id}/
-        // This ensures files are under storage/app/public and served via /storage
-        $path = $request->file('photo')->store("animals/{$animal->id}", 'public');
+        // Try Azure storage first, fall back to public if not available
+        try {
+            $path = $request->file('photo')->store("animals/{$animal->id}", 'azure');
+        } catch (\Exception $e) {
+            $path = $request->file('photo')->store("animals/{$animal->id}", 'public');
+        }
 
         $photo = AnimalPhoto::create([
             'animal_id' => $animal->id,
@@ -99,9 +102,12 @@ final class AnimalPhotoController extends Controller
     {
         Gate::authorize('delete', $animalPhoto);
 
-        // Delete the file from the public disk. Normalize in case legacy paths contain 'public/'.
-        $relativePath = ltrim(str_replace('public/', '', $animalPhoto->path), '/');
-        Storage::disk('public')->delete($relativePath);
+        // Try to delete from Azure storage first, fall back to public if not available
+        try {
+            Storage::disk('azure')->delete($animalPhoto->path);
+        } catch (\Exception $e) {
+            Storage::disk('public')->delete($animalPhoto->path);
+        }
 
         // Delete the record
         $animalPhoto->delete();

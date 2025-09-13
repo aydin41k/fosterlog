@@ -63,10 +63,12 @@ final class AnimalPhoto extends Model
 
     public function getUrlAttribute(): string
     {
-        // Prefer a host-agnostic relative URL to avoid APP_URL mismatches in dev
-        // Storage::url('public/animals/7/foo.jpg') => '/storage/animals/7/foo.jpg'
-        $path = $this->path;
-        $relative = '/storage/' . ltrim(str_replace('public/', '', $path), '/');
-        return $relative;
+        // Try Azure storage first, fall back to public if not available
+        try {
+            return Storage::disk('azure')->url($this->path);
+        } catch (\Exception $e) {
+            // Fall back to public storage for testing or when Azure is not configured
+            return Storage::disk('public')->url($this->path);
+        }
     }
 }

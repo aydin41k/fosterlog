@@ -40,18 +40,34 @@ final class ProfileController extends Controller
         
         // Delete old profile photo if exists
         if ($user->profile_photo_path) {
-            Storage::disk('public')->delete($user->profile_photo_path);
+            // Try to delete from Azure first, fall back to public
+            try {
+                Storage::disk('azure')->delete($user->profile_photo_path);
+            } catch (\Exception $e) {
+                Storage::disk('public')->delete($user->profile_photo_path);
+            }
         }
         
-        // Store the new photo
-        $path = $request->file('photo')->store('profiles', 'public');
+        // Try Azure storage first, fall back to public if not available
+        try {
+            $path = $request->file('photo')->store('profiles', 'azure');
+        } catch (\Exception $e) {
+            $path = $request->file('photo')->store('profiles', 'public');
+        }
         
         // Update user's profile photo path
         $user->update(['profile_photo_path' => $path]);
         
+        // Generate URL with fallback
+        try {
+            $photoUrl = Storage::disk('azure')->url($path);
+        } catch (\Exception $e) {
+            $photoUrl = Storage::disk('public')->url($path);
+        }
+
         return response()->json([
             'message' => 'Profile photo uploaded successfully',
-            'photo_url' => Storage::url($path),
+            'photo_url' => $photoUrl,
             'path' => $path
         ]);
     }

@@ -59,7 +59,12 @@ final class AnimalController extends Controller
 
         // If a photo was uploaded with the create request, store it
         if ($request->hasFile('photo')) {
-            $path = $request->file('photo')->store("animals/{$animal->id}", 'public');
+            // Try Azure storage first, fall back to public if not available
+            try {
+                $path = $request->file('photo')->store("animals/{$animal->id}", 'azure');
+            } catch (\Exception $e) {
+                $path = $request->file('photo')->store("animals/{$animal->id}", 'public');
+            }
 
             AnimalPhoto::create([
                 'animal_id' => $animal->id,
