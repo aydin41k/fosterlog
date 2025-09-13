@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import AuthLayout from '@/layouts/auth-layout';
 import { Form, Head } from '@inertiajs/react';
 import { LoaderCircle } from 'lucide-react';
-import confirm from '@/routes/password/confirm';
+import confirm from '@/routes/password/confirm/index';
 
 export default function ConfirmPassword() {
     return (

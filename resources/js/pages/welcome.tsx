@@ -1,8 +1,8 @@
 import AppLogo from '@/components/app-logo';
 import { Button } from '@/components/ui/button';
 import { PlaceholderPattern } from '@/components/ui/placeholder-pattern';
-import animals from '@/routes/animals';
-import { login, register } from '@/routes';
+import animals from '@/routes/animals/index';
+import { login, register } from '@/routes/index';
 import { type SharedData } from '@/types';
 import { Head, Link, usePage } from '@inertiajs/react';
 import { Activity, Camera, PawPrint, Pill, Scale, ShieldCheck } from 'lucide-react';

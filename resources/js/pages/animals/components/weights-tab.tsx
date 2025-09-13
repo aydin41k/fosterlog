@@ -6,8 +6,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useForm } from '@inertiajs/react';
-import animals from '@/routes/animals';
-import animalWeights from '@/routes/animal-weights';
+import animals from '@/routes/animals/index';
+import animalWeights from '@/routes/animal-weights/index';
 import { useCallback, useEffect, useState } from 'react';
 import { Plus, Scale, Trash2, TrendingUp } from 'lucide-react';
 

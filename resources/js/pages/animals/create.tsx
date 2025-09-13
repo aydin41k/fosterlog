@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 // No dialog needed for Approach 1 (upload on submit)
 import AppLayout from '@/layouts/app-layout';
-import animals from '@/routes/animals';
+import animals from '@/routes/animals/index';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router, useForm } from '@inertiajs/react';
 import { ArrowLeft, Save, Camera } from 'lucide-react';

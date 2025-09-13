@@ -1,6 +1,6 @@
 // Components
-import { logout } from '@/routes';
-import verification from '@/routes/verification';
+import { logout } from '@/routes/index';
+import verification from '@/routes/verification/index';
 import { Form, Head } from '@inertiajs/react';
 import { LoaderCircle } from 'lucide-react';
 

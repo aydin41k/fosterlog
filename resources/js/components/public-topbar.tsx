@@ -1,7 +1,7 @@
 import AppLogo from '@/components/app-logo'
 import { Button } from '@/components/ui/button'
-import animals from '@/routes/animals'
-import { login } from '@/routes'
+import animals from '@/routes/animals/index'
+import { login } from '@/routes/index'
 import { Link, usePage } from '@inertiajs/react'
 import type { SharedData } from '@/types'
 
@@ -30,4 +30,3 @@ export default function PublicTopbar() {
     </header>
   )
 }
-

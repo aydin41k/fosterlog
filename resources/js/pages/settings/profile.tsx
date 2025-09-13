@@ -1,8 +1,8 @@
-import { send } from '@/routes/verification';
+import { send } from '@/routes/verification/index';
 import { type BreadcrumbItem, type SharedData } from '@/types';
 import { Transition } from '@headlessui/react';
 import { Form, Head, Link, usePage } from '@inertiajs/react';
-import profile from '@/routes/profile';
+import profile from '@/routes/profile/index';
 
 import DeleteUser from '@/components/delete-user';
 import HeadingSmall from '@/components/heading-small';
@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/app-layout';
 import SettingsLayout from '@/layouts/settings/layout';
-import { edit } from '@/routes/profile';
+import { edit } from '@/routes/profile/index';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {

@@ -7,8 +7,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import animals from '@/routes/animals';
-import actionRoutes from '@/routes/actions';
+import animals from '@/routes/animals/index';
+import actionRoutes from '@/routes/actions/index';
 import { useCallback, useEffect, useState } from 'react';
 import { Activity, Filter, Plus, Trash2, UtensilsCrossed, Pill } from 'lucide-react';
 

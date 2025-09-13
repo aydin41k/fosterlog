@@ -1,27 +1,45 @@
-/.phpunit.cache
-/bootstrap/ssr
+# --- Dependencies ---
 /node_modules
+
+# --- Build artifacts (Vite/Laravel) ---
 /public/build
 /public/hot
+
+# --- Storage symlink target ---
 /public/storage
-/resources/js/actions
-/resources/js/routes
-/resources/js/wayfinder
+
+# --- Laravel storage & secrets ---
 /storage/*.key
 /storage/pail
+
+# --- Composer vendor ---
 /vendor
+
+# --- Environment files ---
 .env
-.env.backup
-.env.production
-.phpactor.json
+.env.*
+!.env.example
+
+# --- PHP / PHPUnit ---
 .phpunit.result.cache
-Homestead.json
-Homestead.yaml
+/.phpunit.cache
+.phpactor.json
+
+# --- Composer auth ---
+/auth.json
+
+# --- IDE / Editor junk ---
+/.idea
+/.vscode
+/.fleet
+/.zed
+/.nova
+
+# --- Logs / Misc ---
 npm-debug.log
 yarn-error.log
-/auth.json
-/.fleet
-/.idea
-/.nova
-/.vscode
-/.zed
+pnpm-debug.log
+
+# --- OS junk ---
+.DS_Store
+Thumbs.db

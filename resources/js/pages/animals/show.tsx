@@ -5,7 +5,7 @@ import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, Di
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AppLayout from '@/layouts/app-layout';
 import ErrorBoundary from '@/components/error-boundary';
-import animals from '@/routes/animals';
+import animals from '@/routes/animals/index';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, usePage, Form } from '@inertiajs/react';
 import { ArrowLeft, Heart, Image, Scale, Activity, Edit, Trash2 } from 'lucide-react';

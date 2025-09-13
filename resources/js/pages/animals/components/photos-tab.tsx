@@ -6,8 +6,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useForm, usePage } from '@inertiajs/react';
-import animals from '@/routes/animals';
-import animalPhotos from '@/routes/animal-photos';
+import animals from '@/routes/animals/index';
+import animalPhotos from '@/routes/animal-photos/index';
 import { useState } from 'react';
 import { Camera, Star, Trash2, Upload } from 'lucide-react';
 
