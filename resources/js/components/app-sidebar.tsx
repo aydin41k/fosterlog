@@ -5,12 +5,17 @@ import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, Sid
 import animals from '@/routes/animals';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
-import { BookOpen, Folder, Heart, LayoutGrid } from 'lucide-react';
+import { BookOpen, Folder, Heart, House } from 'lucide-react';
 import AppLogo from './app-logo';
 
 const mainNavItems: NavItem[] = [
     {
-        title: 'Pets',
+        title: 'Homepage',
+        href: '/',
+        icon: House,
+    },
+    {
+        title: 'Foster Pets',
         href: animals.index().url,
         icon: Heart,
     },

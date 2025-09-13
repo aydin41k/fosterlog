@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Models\Animal;
+use App\Models\AnimalPhoto;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
@@ -45,13 +46,29 @@ final class AnimalController extends Controller
             'medical_conditions' => 'nullable|string',
             'description' => 'nullable|string',
             'status' => ['sometimes', Rule::in(['in_foster', 'available', 'adopted'])],
+            // Optional primary photo on create
+            'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120',
+            'caption' => 'nullable|string|max:255',
         ]);
 
         // Assign to current user by default
-        Animal::create([
+        $animal = Animal::create([
             'foster_carer_id' => $request->user()->id,
             ...$validated,
         ]);
+
+        // If a photo was uploaded with the create request, store it
+        if ($request->hasFile('photo')) {
+            $path = $request->file('photo')->store("animals/{$animal->id}", 'public');
+
+            AnimalPhoto::create([
+                'animal_id' => $animal->id,
+                'uploaded_by' => $request->user()->id,
+                'path' => $path,
+                'caption' => $request->input('caption') ?: null,
+                'is_primary' => true, // set initial photo as primary
+            ]);
+        }
 
         return redirect()->route('animals.index')->with('success', 'Animal created successfully.');
     }

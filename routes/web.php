@@ -18,6 +18,10 @@ Route::get('/', function () {
 Route::get('/public/animals/{slug}', [PublicAnimalController::class, 'show'])
     ->name('animals.public.show');
 
+// Public-facing adoption pages
+Route::get('/adopt/cats', [PublicAnimalController::class, 'gallery'])->name('public.cats.gallery');
+Route::get('/adopt/cats/{slug}', [PublicAnimalController::class, 'details'])->name('public.cats.details');
+
 Route::middleware(['auth', 'verified'])->group(function () {
     // Keep the dashboard route for compatibility, but redirect to Pets (Animals index)
     Route::get('dashboard', function () {

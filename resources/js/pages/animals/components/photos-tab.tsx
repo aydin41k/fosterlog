@@ -41,7 +41,7 @@ export default function PhotosTab({ animal }: PhotosTabProps) {
 
     // Debug: log mount and animal context
     if (DEBUG) {
-        // eslint-disable-next-line no-console
+         
         console.log('[PhotosTab] mount', { animal });
     }
 
@@ -55,7 +55,7 @@ export default function PhotosTab({ animal }: PhotosTabProps) {
 
         if (!uploadForm.data.photo) {
             if (DEBUG) {
-                // eslint-disable-next-line no-console
+                 
                 console.warn('[PhotosTab] Upload clicked without photo selected');
             }
             toast({
@@ -68,7 +68,7 @@ export default function PhotosTab({ animal }: PhotosTabProps) {
 
         if (!animal || typeof animal.id !== 'number') {
             if (DEBUG) {
-                // eslint-disable-next-line no-console
+                 
                 console.error('[PhotosTab] Missing animal.id; cannot build upload URL', { animal });
             }
             toast({ title: 'Error', description: 'Animal context not ready', variant: 'destructive' });
@@ -81,7 +81,7 @@ export default function PhotosTab({ animal }: PhotosTabProps) {
             const token = (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content || '';
             const url = animals.photos.url(animal.id);
             if (DEBUG) {
-                // eslint-disable-next-line no-console
+                 
                 console.log('[PhotosTab] Starting upload', {
                     url,
                     hasToken: !!token,
@@ -106,7 +106,7 @@ export default function PhotosTab({ animal }: PhotosTabProps) {
             });
 
             if (DEBUG) {
-                // eslint-disable-next-line no-console
+                 
                 console.log('[PhotosTab] Upload response', response.status, response.statusText);
             }
             if (response.ok) {
@@ -127,7 +127,7 @@ export default function PhotosTab({ animal }: PhotosTabProps) {
                 try {
                     error = await response.json();
                 } catch {
-                    // eslint-disable-next-line no-console
+                     
                     console.error('[PhotosTab] Failed to parse error JSON');
                 }
                 toast({
@@ -136,13 +136,13 @@ export default function PhotosTab({ animal }: PhotosTabProps) {
                     variant: 'destructive',
                 });
                 if (DEBUG) {
-                    // eslint-disable-next-line no-console
+                     
                     console.error('[PhotosTab] Upload failed', { status: response.status, error });
                 }
             }
         } catch (err) {
             if (DEBUG) {
-                // eslint-disable-next-line no-console
+                 
                 console.error('[PhotosTab] Upload threw error', err);
             }
             toast({
@@ -159,7 +159,7 @@ export default function PhotosTab({ animal }: PhotosTabProps) {
         try {
             const url = animalPhotos.update.url(photoId);
             if (DEBUG) {
-                // eslint-disable-next-line no-console
+                 
                 console.log('[PhotosTab] Set primary', { photoId, url });
             }
             const response = await fetch(url, {
@@ -192,13 +192,13 @@ export default function PhotosTab({ animal }: PhotosTabProps) {
                     variant: 'destructive',
                 });
                 if (DEBUG) {
-                    // eslint-disable-next-line no-console
+                     
                     console.error('[PhotosTab] Set primary failed', response.status);
                 }
             }
         } catch (err) {
             if (DEBUG) {
-                // eslint-disable-next-line no-console
+                 
                 console.error('[PhotosTab] Set primary threw error', err);
             }
             toast({
@@ -213,7 +213,7 @@ export default function PhotosTab({ animal }: PhotosTabProps) {
         try {
             const url = animalPhotos.destroy.url(photoId);
             if (DEBUG) {
-                // eslint-disable-next-line no-console
+                 
                 console.log('[PhotosTab] Delete photo', { photoId, url });
             }
             const response = await fetch(url, {
@@ -242,7 +242,7 @@ export default function PhotosTab({ animal }: PhotosTabProps) {
             }
         } catch (err) {
             if (DEBUG) {
-                // eslint-disable-next-line no-console
+                 
                 console.error('[PhotosTab] Delete threw error', err);
             }
             toast({
@@ -269,7 +269,7 @@ export default function PhotosTab({ animal }: PhotosTabProps) {
                     open={uploadDialogOpen}
                     onOpenChange={(open) => {
                         if (DEBUG) {
-                            // eslint-disable-next-line no-console
+                             
                             console.log('[PhotosTab] Dialog open change', open);
                         }
                         setUploadDialogOpen(open);
@@ -300,7 +300,7 @@ export default function PhotosTab({ animal }: PhotosTabProps) {
                                             const file = e.target.files?.[0] || null;
                                             uploadForm.setData('photo', file);
                                             if (DEBUG) {
-                                                // eslint-disable-next-line no-console
+                                                 
                                                 console.log('[PhotosTab] File selected', file ? { name: file.name, type: file.type, size: file.size } : null);
                                             }
                                         }}
@@ -323,7 +323,7 @@ export default function PhotosTab({ animal }: PhotosTabProps) {
                             type="button"
                             onClick={(e) => {
                                 if (DEBUG) {
-                                    // eslint-disable-next-line no-console
+                                     
                                     console.log('[PhotosTab] Upload button clicked', { uploading, hasPhoto: !!uploadForm.data.photo });
                                 }
                                 void handlePhotoUpload(e);
@@ -399,7 +399,7 @@ export default function PhotosTab({ animal }: PhotosTabProps) {
                         </p>
                         <Button onClick={() => {
                             if (DEBUG) {
-                                // eslint-disable-next-line no-console
+                                 
                                 console.log('[PhotosTab] Open dialog via CTA');
                             }
                             setUploadDialogOpen(true);
