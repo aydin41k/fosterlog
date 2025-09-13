@@ -102,9 +102,16 @@ export default function AnimalsIndex() {
                                             <Card className="shadow-sm">
                                                 <CardContent className="p-3">
                                                     <div className="flex items-center gap-3">
-                                                        {animal.photos.length ? (
+                                                        {animal.primary_photo_url ? (
                                                             <img
-                                                                src={animal.photos.filter((photo) => photo.is_primary)[0].url}
+                                                                src={animal.primary_photo_url}
+                                                                alt={`${animal.name} photo`}
+                                                                className="h-12 w-12 flex-none rounded-md object-cover"
+                                                                loading="lazy"
+                                                            />
+                                                        ) : animal.photos && animal.photos.length ? (
+                                                            <img
+                                                                src={(animal.photos.find((p) => p.is_primary) || animal.photos[0]).url}
                                                                 alt={`${animal.name} photo`}
                                                                 className="h-12 w-12 flex-none rounded-md object-cover"
                                                                 loading="lazy"

@@ -9,7 +9,7 @@ import { useForm, usePage } from '@inertiajs/react';
 import animals from '@/routes/animals/index';
 import animalPhotos from '@/routes/animal-photos/index';
 import { useState } from 'react';
-import { Camera, Star, Trash2, Upload } from 'lucide-react';
+import { Camera, Star, Trash2, Upload, Loader2 } from 'lucide-react';
 import { getXsrfToken } from '@/lib/csrf';
 
 interface Animal {
@@ -39,6 +39,10 @@ export default function PhotosTab({ animal }: PhotosTabProps) {
     const [photos, setPhotos] = useState<AnimalPhoto[]>((props as { photos?: AnimalPhoto[] }).photos || []);
     const [uploading, setUploading] = useState(false);
     const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+    const [confirmDelete, setConfirmDelete] = useState<{ open: boolean; photoId: number | null }>({ open: false, photoId: null });
+    const [confirmPrimary, setConfirmPrimary] = useState<{ open: boolean; photoId: number | null }>({ open: false, photoId: null });
+    const [deletingId, setDeletingId] = useState<number | null>(null);
+    const [settingPrimaryId, setSettingPrimaryId] = useState<number | null>(null);
 
     // Debug: log mount and animal context
     if (DEBUG) {
@@ -159,9 +163,10 @@ export default function PhotosTab({ animal }: PhotosTabProps) {
 
     const handleSetPrimary = async (photoId: number) => {
         try {
+            setSettingPrimaryId(photoId);
             const url = animalPhotos.update.url(photoId);
             if (DEBUG) {
-                 
+                
                 console.log('[PhotosTab] Set primary', { photoId, url });
             }
             const response = await fetch(url, {
@@ -169,24 +174,20 @@ export default function PhotosTab({ animal }: PhotosTabProps) {
                 headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',
-                    'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content || '',
+                    'X-XSRF-TOKEN': getXsrfToken(),
+                    'X-Requested-With': 'XMLHttpRequest',
                 },
                 body: JSON.stringify({ is_primary: true }),
                 credentials: 'same-origin',
             });
 
             if (response.ok) {
-                // Optimistic UI update
-                setPhotos(prev => prev.map(photo =>
-                    photo.id === photoId
-                        ? { ...photo, is_primary: true }
-                        : { ...photo, is_primary: false }
-                ));
-
                 toast({
                     title: 'Success',
                     description: 'Primary photo updated',
                 });
+                // Force a full refresh to reflect new primary photo across the page
+                window.location.reload();
             } else {
                 toast({
                     title: 'Error',
@@ -194,7 +195,7 @@ export default function PhotosTab({ animal }: PhotosTabProps) {
                     variant: 'destructive',
                 });
                 if (DEBUG) {
-                     
+                    
                     console.error('[PhotosTab] Set primary failed', response.status);
                 }
             }
@@ -208,11 +209,15 @@ export default function PhotosTab({ animal }: PhotosTabProps) {
                 description: 'Failed to set primary photo',
                 variant: 'destructive',
             });
+        } finally {
+            setSettingPrimaryId(null);
+            setConfirmPrimary({ open: false, photoId: null });
         }
     };
 
     const handleDeletePhoto = async (photoId: number) => {
         try {
+            setDeletingId(photoId);
             const url = animalPhotos.destroy.url(photoId);
             if (DEBUG) {
                  
@@ -221,8 +226,9 @@ export default function PhotosTab({ animal }: PhotosTabProps) {
             const response = await fetch(url, {
                 method: 'DELETE',
                 headers: {
-                    'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content || '',
                     'Accept': 'application/json',
+                    'X-XSRF-TOKEN': getXsrfToken(),
+                    'X-Requested-With': 'XMLHttpRequest',
                 },
                 credentials: 'same-origin',
             });
@@ -252,6 +258,9 @@ export default function PhotosTab({ animal }: PhotosTabProps) {
                 description: 'Failed to delete photo',
                 variant: 'destructive',
             });
+        } finally {
+            setDeletingId(null);
+            setConfirmDelete({ open: false, photoId: null });
         }
     };
 
@@ -370,20 +379,40 @@ export default function PhotosTab({ animal }: PhotosTabProps) {
                                             <Button
                                                 variant="outline"
                                                 size="sm"
-                                                onClick={() => handleSetPrimary(photo.id)}
+                                                onClick={() => setConfirmPrimary({ open: true, photoId: photo.id })}
+                                                disabled={settingPrimaryId !== null}
                                             >
-                                                <Star className="mr-1 h-3 w-3" />
-                                                Set Primary
+                                                {settingPrimaryId === photo.id ? (
+                                                    <>
+                                                        <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                                                        Setting...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Star className="mr-1 h-3 w-3" />
+                                                        Set Primary
+                                                    </>
+                                                )}
                                             </Button>
                                         )}
                                         <Button
                                             variant="outline"
                                             size="sm"
-                                            onClick={() => handleDeletePhoto(photo.id)}
+                                            onClick={() => setConfirmDelete({ open: true, photoId: photo.id })}
                                             className="text-destructive hover:text-destructive"
+                                            disabled={deletingId !== null}
                                         >
-                                            <Trash2 className="mr-1 h-3 w-3" />
-                                            Delete
+                                            {deletingId === photo.id ? (
+                                                <>
+                                                    <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                                                    Deleting...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Trash2 className="mr-1 h-3 w-3" />
+                                                    Delete
+                                                </>
+                                            )}
                                         </Button>
                                     </div>
                                 </div>
@@ -425,6 +454,84 @@ export default function PhotosTab({ animal }: PhotosTabProps) {
                     }, null, 2)}</pre>
                 </div>
             )}
+
+            {/* Confirm Delete Dialog */}
+            <Dialog open={confirmDelete.open} onOpenChange={(open) => setConfirmDelete({ open, photoId: open ? confirmDelete.photoId : null })}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Delete Photo</DialogTitle>
+                        <DialogDescription>
+                            Are you sure you want to delete this photo? This action cannot be undone.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => setConfirmDelete({ open: false, photoId: null })}
+                            disabled={deletingId !== null}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="destructive"
+                            onClick={() => confirmDelete.photoId && void handleDeletePhoto(confirmDelete.photoId)}
+                            disabled={deletingId !== null}
+                        >
+                            {deletingId !== null ? (
+                                <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Deleting...
+                                </>
+                            ) : (
+                                'Delete'
+                            )}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Confirm Set Primary Dialog */}
+            <Dialog
+                open={confirmPrimary.open}
+                onOpenChange={(open) =>
+                    setConfirmPrimary({ open, photoId: open ? confirmPrimary.photoId : null })
+                }
+            >
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Set as Primary</DialogTitle>
+                        <DialogDescription>
+                            Make this the primary photo? This will replace the current primary photo.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => setConfirmPrimary({ open: false, photoId: null })}
+                            disabled={settingPrimaryId !== null}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            type="button"
+                            onClick={() => confirmPrimary.photoId && void handleSetPrimary(confirmPrimary.photoId)}
+                            disabled={settingPrimaryId !== null}
+                        >
+                            {settingPrimaryId !== null ? (
+                                <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Setting...
+                                </>
+                            ) : (
+                                'Set Primary'
+                            )}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }
