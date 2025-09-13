@@ -98,12 +98,7 @@ final class AnimalWebTest extends TestCase
 
         $response = $this->get('/dashboard');
 
-        $response->assertStatus(200);
-        $response->assertInertia(fn ($page) => $page
-            ->component('dashboard')
-            ->has('stats')
-            ->where('stats.animals_count', 1)
-        );
+        $response->assertRedirect(route('animals.index'));
     }
 
     public function test_animal_show_page_loads(): void

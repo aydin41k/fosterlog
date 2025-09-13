@@ -123,7 +123,7 @@ export default function PhotosTab({ animal }: PhotosTabProps) {
                     description: 'Photo uploaded successfully',
                 });
             } else {
-                let error: any = {};
+                let error: Record<string, unknown> = {};
                 try {
                     error = await response.json();
                 } catch {

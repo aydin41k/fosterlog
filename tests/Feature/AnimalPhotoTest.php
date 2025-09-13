@@ -172,7 +172,7 @@ final class AnimalPhotoTest extends TestCase
         
         // Create a fake file and store it
         $file = UploadedFile::fake()->image('test-photo.jpg');
-        $path = $file->store("public/animals/{$animal->id}");
+        $path = $file->store("animals/{$animal->id}", 'public');
         
         $photo = AnimalPhoto::factory()->create([
             'animal_id' => $animal->id,

@@ -24,7 +24,12 @@ interface Animal {
     primary_photo_url?: string;
     status_label: string;
     age_years_months?: string;
-    photos: any[];
+    photos: Array<{
+        id: number;
+        url: string;
+        is_primary: boolean;
+        caption?: string;
+    }>;
 }
 
 interface AnimalsIndexProps {
@@ -99,7 +104,7 @@ export default function AnimalsIndex() {
                                                     <div className="flex items-center gap-3">
                                                         {animal.photos.length ? (
                                                             <img
-                                                                src={animal.photos.filter((photo: any) => photo.is_primary)[0].url}
+                                                                src={animal.photos.filter((photo) => photo.is_primary)[0].url}
                                                                 alt={`${animal.name} photo`}
                                                                 className="h-12 w-12 flex-none rounded-md object-cover"
                                                                 loading="lazy"

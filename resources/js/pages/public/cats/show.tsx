@@ -22,7 +22,7 @@ type PublicAnimal = {
 }
 
 type Weight = { id: number; weight_kg: number; measured_at: string; notes?: string | null }
-type Action = { id: number; type: string; details: any; performed_at: string }
+type Action = { id: number; type: string; details: Record<string, unknown>; performed_at: string }
 
 type PageProps = {
   animal: PublicAnimal
