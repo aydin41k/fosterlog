@@ -32,7 +32,7 @@ interface PhotosTabProps {
 }
 
 export default function PhotosTab({ animal }: PhotosTabProps) {
-    const DEBUG = true;
+    const DEBUG = false;
     const { toast } = useToast();
     const { props } = usePage();
     const [photos, setPhotos] = useState<AnimalPhoto[]>((props as { photos?: AnimalPhoto[] }).photos || []);
