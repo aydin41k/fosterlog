@@ -1,8 +1,10 @@
 import { Head, Link, usePage } from '@inertiajs/react'
+import { useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import PublicTopbar from '@/components/public-topbar'
+import { Dialog, DialogContent } from '@/components/ui/dialog'
 
 type PublicPhoto = { id: number; url: string; caption?: string | null; is_primary?: boolean }
 type PublicAnimal = {
@@ -33,6 +35,7 @@ type PageProps = {
 export default function PublicCatDetails() {
   const { animal, weights, actions } = usePage<PageProps>().props
   const available = animal.status === 'available'
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null)
 
   const primaryUrl =
     animal.photos?.find((p) => p.is_primary)?.url || animal.primary_photo_url || animal.photos?.[0]?.url
@@ -74,7 +77,14 @@ export default function PublicCatDetails() {
                 <ul className="grid grid-cols-6 gap-2">
                   {animal.photos.map((p) => (
                     <li key={p.id} className="overflow-hidden rounded-md border">
-                      <img src={p.url} alt={p.caption ?? ''} className="h-14 w-full object-cover" />
+                      <button
+                        type="button"
+                        className="block h-14 w-full cursor-zoom-in"
+                        aria-label={p.caption ? `View ${p.caption}` : 'View photo'}
+                        onClick={() => setLightboxUrl(p.url)}
+                      >
+                        <img src={p.url} alt={p.caption ?? ''} className="h-14 w-full object-cover" />
+                      </button>
                     </li>
                   ))}
                 </ul>
@@ -153,6 +163,17 @@ export default function PublicCatDetails() {
             </Card>
           </div>
         </div>
+
+        {/* Lightbox dialog for full-size image */}
+        <Dialog open={!!lightboxUrl} onOpenChange={(open) => !open && setLightboxUrl(null)}>
+          <DialogContent className="p-0 sm:max-w-3xl">
+            {lightboxUrl && (
+              <div className="relative">
+                <img src={lightboxUrl} alt="Full size photo" className="h-full w-full rounded-md object-contain" />
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </>
   )
