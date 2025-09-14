@@ -20,6 +20,7 @@ type PublicAnimal = {
   age_years_months?: string | null
   primary_photo_url?: string | null
   latest_weight_kg?: number | null
+  foster_parent_name?: string | null
   photos?: PublicPhoto[]
 }
 
@@ -99,6 +100,10 @@ export default function PublicCatDetails() {
                   <li>
                     <span className="text-muted-foreground">Status</span>
                     <div className="mt-0.5">{animal.status_label}</div>
+                  </li>
+                  <li>
+                    <span className="text-muted-foreground">Foster parent</span>
+                    <div className="mt-0.5">{animal.foster_parent_name ?? '—'}</div>
                   </li>
                   <li>
                     <span className="text-muted-foreground">Age</span>

@@ -54,7 +54,8 @@ final class PublicAnimalController extends Controller
     {
         $animal = Animal::where('slug', $slug)
             ->where('species', 'cat')
-            ->with(['photos', 'weights', 'actions']) // do not load user relations to avoid PII
+            // Load limited foster carer info (name only) for public display
+            ->with(['photos', 'weights', 'actions', 'fosterCarer:id,name'])
             ->firstOrFail();
 
         $animalArray = (new PublicAnimalResource($animal))->toArray(request());

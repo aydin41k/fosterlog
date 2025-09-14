@@ -30,6 +30,10 @@ final class PublicAnimalResource extends JsonResource
             'slug' => $this->slug,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
+            // Publicly safe foster parent display name when relation is loaded
+            'foster_parent_name' => $this->when($this->relationLoaded('fosterCarer'), function () {
+                return $this->fosterCarer?->name;
+            }),
             
             // Computed fields
             'primary_photo_url' => $this->when($this->relationLoaded('photos'), function () {
