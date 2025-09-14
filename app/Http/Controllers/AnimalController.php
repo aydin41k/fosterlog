@@ -46,8 +46,8 @@ final class AnimalController extends Controller
             'medical_conditions' => 'nullable|string',
             'description' => 'nullable|string',
             'status' => ['sometimes', Rule::in(['in_foster', 'available', 'adopted'])],
-            // Optional primary photo on create
-            'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120',
+            // Optional primary photo on create (support mobile formats)
+            'photo' => 'nullable|mimes:jpeg,png,jpg,gif,webp,heic,heif|max:10240',
             'caption' => 'nullable|string|max:255',
         ]);
 

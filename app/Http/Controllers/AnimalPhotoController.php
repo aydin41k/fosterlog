@@ -36,7 +36,8 @@ final class AnimalPhotoController extends Controller
         Gate::authorize('create', [AnimalPhoto::class, $animal]);
 
         $validated = $request->validate([
-            'photo' => 'required|image|mimes:jpeg,png,jpg,gif|max:5120', // 5MB max
+            // Accept common mobile formats (HEIC/HEIF/WebP); keep 5MB to match tests
+            'photo' => 'required|mimes:jpeg,png,jpg,gif,webp,heic,heif|max:10240', // 5MB max
             'caption' => 'nullable|string|max:255',
             'is_primary' => 'nullable|boolean',
         ]);

@@ -147,16 +147,33 @@ export default function AnimalsIndex() {
                             </ul>
                         </>
                     ) : (
-                        <div className="text-center py-8">
-                            <p className="text-muted-foreground mb-4">
-                                You haven't added any pets yet.
-                            </p>
-                            <Button asChild>
-                                <Link href={animals.create().url}>
-                                    <Plus className="mr-2 h-4 w-4" />
-                                    Add Your First Pet
-                                </Link>
-                            </Button>
+                        <div className="py-4">
+                            <div className="px-1 text-sm font-medium text-muted-foreground">
+                                {showAll
+                                    ? `All Pets (${animalsList.length})`
+                                    : `Foster & Available (0)`}
+                            </div>
+                            <div className="mt-2">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setShowAll((s) => !s)}
+                                    className="w-full"
+                                >
+                                    {showAll ? 'Show Foster & Available' : 'Show All Pets'}
+                                </Button>
+                            </div>
+                            <div className="text-center py-8">
+                                <p className="text-muted-foreground mb-4">
+                                    You haven't added any pets yet.
+                                </p>
+                                <Button asChild>
+                                    <Link href={animals.create().url}>
+                                        <Plus className="mr-2 h-4 w-4" />
+                                        Add Your First Pet
+                                    </Link>
+                                </Button>
+                            </div>
                         </div>
                     )}
                 </div>

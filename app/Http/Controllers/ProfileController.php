@@ -33,7 +33,8 @@ final class ProfileController extends Controller
     public function uploadPhoto(Request $request): JsonResponse
     {
         $request->validate([
-            'photo' => ['required', 'image', 'mimes:jpeg,png,jpg,gif', 'max:2048'], // 2MB max
+            // Accept common mobile formats (HEIC/HEIF/WebP) and increase limit for modern phones
+            'photo' => ['required', 'mimes:jpeg,png,jpg,gif,webp,heic,heif', 'max:10240'], // 8MB max
         ]);
         
         $user = $request->user();
